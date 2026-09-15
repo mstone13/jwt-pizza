@@ -1,18 +1,34 @@
 name: CI Pipeline
 
 on:
-  workflow_dispatch
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 jobs:
-  test:
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Report
+      - name: create static deployment file
         run: |
-          files=$(find "." -type f -name "*.md"  | wc -l | awk '{print $1}')
-          if [ "$files" -gt 0 ]; then
-            lines=$(find "." -type f -name "*.md"  -print0 | xargs -0 wc -l | tail -1 | awk '{print $1}')
-            printf "%-10s %6s %8s\n" ".md" "$files" "$lines"
-          fi
+          mkdir dist
+          echo "<h1>Hello GitHub Pages</h1>" >> dist/index.html
+
+      - name: Update pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
