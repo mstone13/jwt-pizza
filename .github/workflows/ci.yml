@@ -1,11 +1,18 @@
 name: CI Pipeline
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Hello GitHub Actions"
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Report
+        run: |
+          files=$(find "." -type f -name "*.md"  | wc -l | awk '{print $1}')
+          if [ "$files" -gt 0 ]; then
+            lines=$(find "." -type f -name "*.md"  -print0 | xargs -0 wc -l | tail -1 | awk '{print $1}')
+            printf "%-10s %6s %8s\n" ".md" "$files" "$lines"
+          fi
