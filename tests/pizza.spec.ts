@@ -7,6 +7,11 @@ async function basicInit(page: Page) {
   const validUsers: Record<string, User> = { 'd@jwt.com': { id: '3', name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] } };
 
   await page.route('*/**/api/auth', async (route) => {
+    if (route.request().method() === 'DELETE') {
+      await route.fulfill({ json: {} });
+      return;
+    }
+
     const loginReq = route.request().postDataJSON();
     const user = validUsers[loginReq.email];
     if (!user || user.password !== loginReq.password) {
@@ -77,6 +82,37 @@ test('login', async ({ page }) => {
   await page.getByRole('button', { name: 'Login' }).click();
 
   await expect(page.getByRole('link', { name: 'KC' })).toBeVisible();
+});
+
+test('logout', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await expect(page.getByRole('link', { name: 'Logout' })).toBeVisible();
+  const logoutRequest = page.waitForRequest((request) => request.url().endsWith('/api/auth') && request.method() === 'DELETE');
+  await page.getByRole('link', { name: 'Logout' }).click();
+  await logoutRequest;
+
+  await expect(page.getByRole('link', { name: 'Login' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Logout' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'KC' })).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('token'))).toBeNull();
+});
+
+test('all icons are visible and have non-zero dimensions', async ({ page }) => {
+  await page.goto('/tests/icons.html');
+
+  const icons = page.getByTestId('icon').locator('svg');
+  await expect(icons).toHaveCount(12);
+  for (const icon of await icons.all()) {
+    await expect(icon).toBeVisible();
+    const bounds = await icon.boundingBox();
+    expect(bounds?.width).toBeGreaterThan(0);
+    expect(bounds?.height).toBeGreaterThan(0);
+  }
 });
 
 test('purchase with login', async ({ page }) => {
