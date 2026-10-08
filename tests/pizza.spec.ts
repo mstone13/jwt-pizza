@@ -62,6 +62,11 @@ async function basicInit(page: Page) {
   });
 
   await page.route('*/**/api/order', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: { id: '3', dinerId: '3', orders: [] } });
+      return;
+    }
+
     const orderReq = route.request().postDataJSON();
     const orderRes = {
       order: { ...orderReq, id: 23 },
@@ -82,6 +87,20 @@ test('login', async ({ page }) => {
   await page.getByRole('button', { name: 'Login' }).click();
 
   await expect(page.getByRole('link', { name: 'KC' })).toBeVisible();
+});
+
+test('user views the diner dashboard', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'KC' }).click();
+  await expect(page.getByRole('heading', { name: 'Your pizza kitchen' })).toBeVisible();
+  await expect(page.getByText('Kai Chen')).toBeVisible();
+  await expect(page.getByText('d@jwt.com')).toBeVisible();
+  await expect(page.getByText('diner', { exact: true })).toBeVisible();
 });
 
 test('logout', async ({ page }) => {
@@ -139,4 +158,3 @@ test('purchase with login', async ({ page }) => {
 
   await expect(page.getByText('0.008')).toBeVisible();
 });
-
