@@ -18,7 +18,7 @@ const test = base.extend({
         const violation = { method: request.method(), url, body: request.postData() };
         violations.push(violation);
         console.log(`Blocked request to http://localhost:3000 -> ${violation.method} ${violation.url} ${violation.body}`);
-        await route.abort();
+        await route.fallback();
         return;
       }
 

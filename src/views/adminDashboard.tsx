@@ -17,11 +17,24 @@ export default function AdminDashboard(props: Props) {
   const [franchisePage, setFranchisePage] = React.useState(0);
   const filterFranchiseRef = React.useRef<HTMLInputElement>(null);
 
+  const [userList, setUserList] = React.useState<User[]>([]);
+  const [userPage, setUserPage] = React.useState(0);
+  const filterUserRef = React.useRef<HTMLInputElement>(null);
+
+
   React.useEffect(() => {
     (async () => {
       setFranchiseList(await pizzaService.getFranchises(franchisePage, 3, '*'));
     })();
   }, [props.user, franchisePage]);
+
+  React.useEffect(() => {
+  (async () => {
+    const users = await pizzaService.listUsers();
+    setUserList(users);
+  })();
+}, [props.user]);
+
 
   function createFranchise() {
     navigate('/admin-dashboard/create-franchise');
@@ -120,9 +133,39 @@ export default function AdminDashboard(props: Props) {
             </div>
           </div>
         </div>
+
         <div>
           <Button className="w-36 text-xs sm:text-sm sm:w-64" title="Add Franchise" onPress={createFranchise} />
         </div>
+
+      <div className="text-start py-8 px-4 sm:px-6 lg:px-8">
+          <h3 className="text-neutral-100 text-xl">Users</h3>
+          <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">
+                        <tr>
+                          {['Name', "Email", "Role"].map((header) => (
+                            <th key={header} scope="col" className="px-6 py-3 text-center text-xs font-medium">
+                              {header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      {userList.map((user, uindex) => {
+                        return (
+                          <tbody key={uindex} className="divide-y divide-gray-200">
+                            <tr className="border-neutral-500 border-t-2">
+                              <td className="text-start px-2 whitespace-nowrap text-l font-mono text-orange-600">{user.name}</td>
+                              <td className="text-start px-2 whitespace-nowrap text-sm font-normal text-gray-800">{user.email}</td>
+                              <td className="text-start px-2 whitespace-nowrap text-sm font-normal text-gray-800">{user.roles?.map((r) => r.role).join(', ')}</td>
+                            </tr>
+                          </tbody>
+                        );
+                      })}
+          </table>
+
+      </div>
+
+
       </View>
     );
   }

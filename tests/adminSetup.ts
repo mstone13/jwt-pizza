@@ -36,4 +36,14 @@ export async function mockAdminApi(page: Page) {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ json: [] });
   });
+
+  await page.route('*/**/api/user?page=1&limit=10&name=*', async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({
+      json: {
+        users: [],
+        more: false,
+      },
+    });
+  });
 }

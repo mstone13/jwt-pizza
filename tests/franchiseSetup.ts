@@ -71,4 +71,14 @@ export async function mockAdminFranchiseApi(page: Page) {
       throw new Error(`Unexpected franchise API request: ${request.method()} ${path}`);
     }
   });
+
+  await page.route('*/**/api/user?page=1&limit=10&name=*', async (route) => {
+  expect(route.request().method()).toBe('GET');
+  await route.fulfill({
+    json: {
+      users: [],
+      more: false,
+    },
+  });
+});
 }
