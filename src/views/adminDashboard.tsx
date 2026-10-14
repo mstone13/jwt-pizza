@@ -18,7 +18,8 @@ export default function AdminDashboard(props: Props) {
   const filterFranchiseRef = React.useRef<HTMLInputElement>(null);
 
   const [userList, setUserList] = React.useState<User[]>([]);
-  const [userPage, setUserPage] = React.useState(0);
+  const [userPage, setUserPage] = React.useState(1);
+  const [userMore, setUserMore] = React.useState(false);
   const filterUserRef = React.useRef<HTMLInputElement>(null);
 
 
@@ -29,11 +30,12 @@ export default function AdminDashboard(props: Props) {
   }, [props.user, franchisePage]);
 
   React.useEffect(() => {
-  (async () => {
-    const users = await pizzaService.listUsers();
-    setUserList(users);
-  })();
-}, [props.user]);
+    (async () => {
+      const result = await pizzaService.listUsers(userPage, 10);
+      setUserList(result.users);
+      setUserMore(result.more);
+    })();
+  }, [props.user, userPage]);
 
 
   function createFranchise() {
@@ -50,6 +52,15 @@ export default function AdminDashboard(props: Props) {
 
   async function filterFranchises() {
     setFranchiseList(await pizzaService.getFranchises(franchisePage, 10, `*${filterFranchiseRef.current?.value}*`));
+  }
+
+  async function filterUsers() {
+    const result = await pizzaService.listUsers(userPage, 10);
+    const filter = filterUserRef.current?.value || '';
+
+    setUserList(result.users.filter((user =>(user.name ?? '').includes(filter))));
+
+    setUserMore(result.more);
   }
 
   let response = <NotFound />;
@@ -161,8 +172,37 @@ export default function AdminDashboard(props: Props) {
                           </tbody>
                         );
                       })}
-          </table>
 
+
+                      <tfoot>
+                        
+                          <td className="px-1 py-1">
+                            <input type="text" ref={filterUserRef} name="filterUser" placeholder="Filter users" className="px-2 py-1 text-sm border border-gray-300 rounded-lg" />
+                            <button type="submit" className="ml-2 px-2 py-1 text-sm font-semibold rounded-lg border border-orange-400 text-orange-400 hover:border-orange-800 hover:text-orange-800" onClick={filterUsers}>
+                              Submit
+                            </button>
+                          </td>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              className="m-1 rounded-lg border border-gray-300 px-3 py-1 text-sm font-semibold hover:bg-orange-200 disabled:bg-neutral-300"
+                              onClick={() => setUserPage(userPage - 1)}
+                              disabled={userPage <= 1}
+                            >
+                              Previous
+                            </button>
+                            <button
+                              type="button"
+                              className="m-1 rounded-lg border border-gray-300 px-3 py-1 text-sm font-semibold hover:bg-orange-200 disabled:bg-neutral-300"
+                              onClick={() => setUserPage(userPage + 1)}
+                              disabled={!userMore}
+                            >
+                              Next
+                            </button>
+                          </div>
+                      </tfoot>
+          </table>
+          
       </div>
 
 
