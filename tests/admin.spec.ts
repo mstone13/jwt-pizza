@@ -148,3 +148,52 @@ test ('admin can filter users list by name', async ({ page }) => {
   await expect(page.getByRole('cell', { name: 'Bob', exact: true })).toHaveCount(0);
   await expect(page.getByRole('cell', { name: 'Alice', exact: true })).toBeVisible();
 });
+
+test('admin can delete a user', async ({ page }) => {
+  const users = [
+    { id: '5', name: 'Alice', email: 'alice@jwt.com', roles: [] },
+    { id: '6', name: 'Bob', email: 'bob@jwt.com', roles: [] },
+    { id: '7', name: 'Charlie', email: 'charlie@jwt.com', roles: [] },
+  ];
+
+  await page.route('*/**/api/user**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (request.method() === 'DELETE' && url.pathname.startsWith('/api/user/')) {
+      const userId = url.pathname.split('/').pop();
+      const userIndex = users.findIndex((user) => user.id === userId);
+      expect(userIndex).not.toBe(-1);
+      users.splice(userIndex, 1);
+      await route.fulfill({ json: null });
+      return;
+    }
+
+    if (request.method() === 'GET' && url.pathname === '/api/user') {
+      const nameFilter = url.searchParams.get('name');
+      const filteredUsers =
+        nameFilter && nameFilter !== '*'
+          ? users.filter((user) => user.name.includes(nameFilter))
+          : users;
+
+      await route.fulfill({ json: { users: filteredUsers, more: false } });
+      return;
+    }
+
+    throw new Error(`Unexpected user API request: ${request.method()} ${url.pathname}`);
+  });
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+  await expect(page.getByRole('cell', { name: 'Bob', exact: true })).toBeVisible();
+
+  const bobRow = page.getByRole('row').filter({ hasText: 'Bob' });
+  await bobRow.getByRole('button', { name: '✕' }).click();
+
+  await expect(page.getByRole('cell', { name: 'Bob', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: 'Alice', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Charlie', exact: true })).toBeVisible();
+
+  await page.getByPlaceholder('Filter users').fill('');
+  await page.getByRole('table').filter({ hasText: 'NameEmailRole' }).getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByRole('cell', { name: 'Bob', exact: true })).toHaveCount(0);
+});
