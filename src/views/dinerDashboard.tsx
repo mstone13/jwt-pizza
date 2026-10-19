@@ -17,7 +17,6 @@ export default function DinerDashboard(props: Props) {
   const emailRef = React.useRef<HTMLInputElement>(null);
   const passwordRef = React.useRef<HTMLInputElement>(null);
 
-
   const user = props.user || ({} as User);
   const [orders, setOrders] = React.useState<Order[]>([]);
 
@@ -48,8 +47,11 @@ export default function DinerDashboard(props: Props) {
   };
 
   await pizzaService.updateUser(updatedUser);
+  try {
+      props.setUser(updatedUser);
+  } catch (error) {
+      console.error('Error updating user:', error);}
 
-  props.setUser(updatedUser);
   setTimeout(() => {
     HSOverlay.close(document.getElementById('hs-jwt-modal')!);
   }, 100);
